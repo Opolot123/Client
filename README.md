@@ -1,35 +1,80 @@
-# Client
-import requests
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
-BASE_URL = 'http://127.0.0.1:5000/items'
+public class ItemClient {
 
-def get_items():
-    response = requests.get(BASE_URL)
-    print(response.json())
+    private static final String BASE_URL = "http://localhost:8080/items";
 
-def get_item(item_id):
-    response = requests.get(f'{BASE_URL}/{item_id}')
-    print(response.json())
+    public static void main(String[] args) throws Exception {
+        createItem("Item 1");
+        getAllItems();
+        getItem(1L);
+        updateItem(1L, "Updated Item 1");
+        deleteItem(2L);
+        getAllItems();
+    }
 
-def create_item(name):
-    response = requests.post(BASE_URL, json={"name": name})
-    print(response.json())
+    private static void getAllItems() throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(BASE_URL).openConnection();
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Accept", "application/json");
+        
+        if (connection.getResponseCode() == 200) {
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String inputLine;
+            StringBuilder response = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            System.out.println("All Items: " + response);
+        }
+    }
 
-def update_item(item_id, name):
-    response = requests.put(f'{BASE_URL}/{item_id}', json={"name": name})
-    print(response.json())
+    private static void getItem(Long id) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(BASE_URL + "/" + id).openConnection();
+        connection.setRequestMethod("GET");
+        
+        // Handle response similar to getAllItems
+    }
 
-def delete_item(item_id):
-    response = requests.delete(f'{BASE_URL}/{item_id}')
-    print('Deleted' if response.status_code == 204 else 'Error')
+    private static void createItem(String name) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(BASE_URL).openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
 
-if __name__ == '__main__':
-    # Example usage
-    get_items()
-    create_item('New Item')
-    get_items()
-    update_item(1, 'Updated Item 1')
-    get_items()
-    delete_item(2)
-    get_items()
+        String jsonInputString = "{\"name\": \"" + name + "\"}";
+        try (OutputStream os = connection.getOutputStream()) {
+            byte[] input = jsonInputString.getBytes("utf-8");
+            os.write(input, 0, input.length);
+        }
 
+        // Handle response
+    }
+
+    private static void updateItem(Long id, String newName) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(BASE_URL + "/" + id).openConnection();
+        connection.setRequestMethod("PUT");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+
+        String jsonInputString = "{\"name\": \"" + newName + "\"}";
+        try (OutputStream os = connection.getOutputStream()) {
+            byte[] input = jsonInputString.getBytes("utf-8");
+            os.write(input, 0, input.length);
+        }
+
+        // Handle response
+    }
+
+    private static void deleteItem(Long id) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(BASE_URL + "/" + id).openConnection();
+        connection.setRequestMethod("DELETE");
+        
+        // Handle response
+    }
+}
